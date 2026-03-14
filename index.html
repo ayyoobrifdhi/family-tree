@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Jameel Marikkar Family Tree</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
@@ -10,141 +10,830 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(180deg, #FAF6F0 0%, #F0E8DA 100%);
-            min-height: 100vh;
-            font-family: 'Lato', sans-serif;
+            background: #FAF6F0;
+            font-family: 'Lato', 'Segoe UI', sans-serif;
             color: #3E2723;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
         }
 
-        header {
+        /* ── Header ─────────────────────────────────────────── */
+        #header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, #FAF6F0 60%, transparent);
             text-align: center;
-            padding: 2rem 1rem 1rem;
+            padding: 12px 16px 20px;
+            pointer-events: none;
         }
 
-        header h1 {
+        #header h1 {
             font-family: 'Playfair Display', Georgia, serif;
-            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            font-size: 1.3rem;
             font-weight: 700;
             color: #3E2723;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .ornament {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin-top: 0.5rem;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .ornament .line { width: 40px; height: 1px; background: #C9A96E; }
+        .ornament .dot { width: 4px; height: 4px; border-radius: 50%; background: #C9A96E; }
+        .ornament .dot.c { width: 5px; height: 5px; }
+
+        /* ── Splash screen ──────────────────────────────────── */
+        #splash {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: #FAF6F0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+        #splash.fade-out { opacity: 0; pointer-events: none; }
+
+        #splash h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.6rem, 5vw, 2.6rem);
+            font-weight: 700;
+            color: #3E2723;
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: splashTitle 1s 0.3s ease forwards;
         }
 
-        .ornament .line {
-            width: 60px;
+        #splash .splash-ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+            opacity: 0;
+            animation: splashFade 0.8s 0.8s ease forwards;
+        }
+        #splash .splash-ornament .line {
+            width: 0;
             height: 1px;
             background: #C9A96E;
+            animation: lineGrow 0.6s 1.1s ease forwards;
+        }
+        #splash .splash-ornament .dot {
+            width: 5px; height: 5px; border-radius: 50%; background: #C9A96E;
+        }
+        #splash .splash-ornament .dot.c { width: 6px; height: 6px; }
+
+        #splash .splash-leaf {
+            margin-top: 30px;
+            opacity: 0;
+            animation: splashFade 0.6s 1.4s ease forwards;
         }
 
-        .ornament .dot {
-            width: 5px;
-            height: 5px;
+        @keyframes splashTitle {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes splashFade {
+            to { opacity: 1; }
+        }
+        @keyframes lineGrow {
+            to { width: 50px; }
+        }
+
+        /* ── Controls ───────────────────────────────────────── */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            right: 16px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #controls button {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: #C9A96E;
+            border: 1.5px solid #D7CCC8;
+            background: rgba(255,255,255,0.92);
+            color: #5D4037;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(62,39,35,0.12);
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .ornament .dot.center {
-            width: 6px;
-            height: 6px;
+        #controls button:hover { background: #FFF8E1; }
+        #controls button:active { background: #F0E8DA; }
+
+        #controls button svg { width: 20px; height: 20px; }
+
+        /* ── Hint toast ─────────────────────────────────────── */
+        #hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(93,64,55,0.88);
+            color: #FFF8E1;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.6s;
+        }
+        #hint.hidden { opacity: 0; }
+
+        /* ── Tree canvas ────────────────────────────────────── */
+        #canvas {
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        #canvas.smooth {
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .hint {
+        /* Connectors SVG */
+        #connectors {
+            position: absolute;
+            top: 0; left: 0;
+            pointer-events: none;
+        }
+
+        /* ── Node cards ─────────────────────────────────────── */
+        .node {
+            position: absolute;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            padding: 0.5rem;
-            font-size: 0.85rem;
-            color: #8D6E63;
-            opacity: 0.8;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: box-shadow 0.25s, transform 0.25s;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .tree-container {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            padding: 0.5rem 1rem 2rem;
-            cursor: grab;
+        .node {
+            transition: box-shadow 0.25s, transform 0.25s, opacity 0.4s;
         }
 
-        .tree-container:active {
-            cursor: grabbing;
+        .node:hover {
+            transform: translateY(-2px);
         }
 
-        .tree-container svg {
-            display: block;
-            min-width: 100%;
-            height: auto;
-            min-height: 300px;
+        .node.highlight {
+            box-shadow: 0 0 0 3px #C9A96E, 0 4px 16px rgba(62,39,35,0.25) !important;
+            transform: translateY(-2px);
         }
 
-        /* Mobile: make it scrollable and show hint */
-        @media (max-width: 768px) {
-            .tree-container svg {
-                width: 2400px;
-                height: auto;
-            }
-            .hint { display: block; }
+        .node .name {
+            font-weight: 700;
+            line-height: 1.35;
+            white-space: nowrap;
         }
 
-        @media (min-width: 769px) {
-            .tree-container svg {
-                width: 100%;
-                height: auto;
-            }
-            .hint { display: none; }
+        /* Intro animation for nodes */
+        .node.anim-hidden {
+            opacity: 0;
+            transform: scale(0.5) translateY(-20px);
+        }
+        .node.anim-grow {
+            animation: nodeGrow 0.5s ease forwards;
+        }
+        @keyframes nodeGrow {
+            0%   { opacity: 0; transform: scale(0.5) translateY(-20px); }
+            60%  { opacity: 1; transform: scale(1.05) translateY(0); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        footer {
-            text-align: center;
-            padding: 1rem;
-            font-size: 0.75rem;
-            color: #BCAAA4;
+        /* Connector draw-in animation */
+        #connectors path {
+            transition: opacity 0.3s;
         }
+        #connectors path.anim-draw {
+            animation: drawBranch 0.6s ease forwards;
+        }
+        @keyframes drawBranch {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Level 0 - Root */
+        .node.L0 {
+            background: linear-gradient(180deg, #7D5A4A, #5D4037);
+            border: 2px solid #C9A96E;
+            box-shadow: 0 0 20px rgba(201,169,110,0.2), 0 4px 12px rgba(62,39,35,0.18);
+        }
+        .node.L0 .name { color: #FFF8E1; font-size: 17px; }
+
+        /* Level 1 - Children */
+        .node.L1 {
+            background: linear-gradient(180deg, #43A047, #2E7D32);
+            border: 1.5px solid #1B5E20;
+            box-shadow: 0 3px 10px rgba(46,125,50,0.2);
+        }
+        .node.L1 .name { color: #FFFFFF; font-size: 15px; }
+
+        /* Level 2 - Grandchildren */
+        .node.L2 {
+            background: linear-gradient(180deg, #A5D6A7, #81C784);
+            border: 1.5px solid #4CAF50;
+            box-shadow: 0 3px 10px rgba(129,199,132,0.25);
+        }
+        .node.L2 .name { color: #1B5E20; font-size: 14px; }
+
+        /* Level 3 - Great-grandchildren */
+        .node.L3 {
+            background: linear-gradient(180deg, #FFFDE7, #FFF9C4);
+            border: 1.5px solid #F9A825;
+            box-shadow: 0 3px 10px rgba(249,168,37,0.15);
+        }
+        .node.L3 .name { color: #5D4037; font-size: 14px; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Jameel Marikkar Family Tree</h1>
-        <div class="ornament">
-            <div class="line"></div>
-            <div class="dot"></div>
-            <div class="dot center"></div>
-            <div class="dot"></div>
-            <div class="line"></div>
-        </div>
-    </header>
 
-    <p class="hint">Swipe left/right to explore the tree</p>
-
-    <div class="tree-container" id="treeContainer">
-        <object data="Marikkar_Family_Tree.svg" type="image/svg+xml" width="100%" aria-label="Jameel Marikkar Family Tree"></object>
+<!-- Splash screen -->
+<div id="splash">
+    <h1>Jameel Marikkar<br>Family Tree</h1>
+    <div class="splash-ornament">
+        <div class="line"></div>
+        <div class="dot"></div>
+        <div class="dot c"></div>
+        <div class="dot"></div>
+        <div class="line"></div>
     </div>
+    <div class="splash-leaf">
+        <svg width="32" height="44" viewBox="0 0 20 28" fill="none">
+            <path d="M10,0 C16,6 18,14 16,22 C14,26 10,28 10,28 C10,28 6,26 4,22 C2,14 4,6 10,0Z" fill="#81C784" opacity="0.5"/>
+            <line x1="10" y1="3" x2="10" y2="26" stroke="#66BB6A" stroke-width="0.8" opacity="0.5"/>
+        </svg>
+    </div>
+</div>
 
-    <footer>Jameel Marikkar Family</footer>
+<div id="header" style="opacity:0; transition: opacity 0.5s;">
+    <h1>Jameel Marikkar Family Tree</h1>
+    <div class="ornament">
+        <div class="line"></div>
+        <div class="dot"></div>
+        <div class="dot c"></div>
+        <div class="dot"></div>
+        <div class="line"></div>
+    </div>
+</div>
 
-    <script>
-        // Drag to scroll on desktop
-        const container = document.getElementById('treeContainer');
-        let isDown = false, startX, scrollLeft;
+<div id="controls" style="opacity:0; transition: opacity 0.5s;">
+    <button id="zoomIn" aria-label="Zoom in">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+    </button>
+    <button id="zoomOut" aria-label="Zoom out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="12" x2="17" y2="12"/></svg>
+    </button>
+    <button id="fitBtn" aria-label="Fit to screen" style="font-size:15px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8V5a2 2 0 012-2h3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M21 16v3a2 2 0 01-2 2h-3"/></svg>
+    </button>
+</div>
 
-        container.addEventListener('mousedown', e => {
-            isDown = true;
-            startX = e.pageX - container.offsetLeft;
-            scrollLeft = container.scrollLeft;
+<div id="hint" style="opacity:0;">Pinch to zoom &middot; Drag to pan &middot; Tap a name to highlight</div>
+
+<div id="canvas">
+    <svg id="connectors"></svg>
+</div>
+
+<script>
+// ── Family data ─────────────────────────────────────────────
+const treeData = {
+    label: "Mohammed Jameel Marikkar\n&\nHaleema Nachiya", id: "root",
+    children: [
+        { label: "Ahmed Fuward\n&\nFathima Nazliya", id: "c1", children: [
+            { label: "Nafla Fuward\n&\nMilhan Bahar", id: "c1a", children: [
+                { label: "Hajara", id: "c1a1" },
+                { label: "Hafsa", id: "c1a2" },
+                { label: "Hashma", id: "c1a3" },
+                { label: "Hairah", id: "c1a4" },
+            ]},
+            { label: "Shafna Fuward\n&\nAzam Hamdoon", id: "c1b", children: [
+                { label: "Hana", id: "c1b1" },
+                { label: "Haroon", id: "c1b2" },
+                { label: "Hayah", id: "c1b3" },
+            ]},
+            { label: "Nabeel Fuward\n&\nFathima Reshma", id: "c1c", children: [
+                { label: "Khalid", id: "c1c1" },
+            ]},
+            { label: "Nazeel Fuward\n&\nFathima Sabeeha", id: "c1d" },
+        ]},
+        { label: "Marhoma Fuwarda\n&\nYoosuf Ismail", id: "c2", children: [
+            { label: "Minsha Ismail\n&\nFathima Zinha", id: "c2a", children: [
+                { label: "Sumaiyya", id: "c2a1" },
+                { label: "Hayah", id: "c2a2" },
+            ]},
+            { label: "Shafras Ismail\n&\nFathima Ziqra", id: "c2b", children: [
+                { label: "Zaid", id: "c2b1" },
+                { label: "Noorah", id: "c2b2" },
+            ]},
+            { label: "Zimra Ismail\n&\nAkhlas Ashraff", id: "c2c", children: [
+                { label: "Ammar", id: "c2c1" },
+                { label: "Muhammadh", id: "c2c2" },
+                { label: "Khadijah", id: "c2c3" },
+            ]},
+            { label: "Mubeen Ismail\n&\nFathima Nuzla", id: "c2d", children: [
+                { label: "Adam", id: "c2d1" },
+            ]},
+        ]},
+        { label: "Fazliya Hanim\n&\nIqbal Azeez", id: "c3", children: [
+            { label: "Rizan Iqbal\n&\nFathima Jezla", id: "c3a", children: [
+                { label: "Noorah", id: "c3a1" },
+                { label: "Ayrah", id: "c3a2" },
+            ]},
+        ]},
+        { label: "Fathima Fazeela\n&\nAhsan Shareef", id: "c4", children: [
+            { label: "Lafrina Ahsan\n&\nIshak Ansar", id: "c4a", children: [
+                { label: "Eesa", id: "c4a1" },
+            ]},
+            { label: "Luqman Ahsan", id: "c4b" },
+        ]},
+        { label: "Ahmad Fahim\n&\nFathima Rizmiya", id: "c5", children: [
+            { label: "Rifla Fahim\n&\nAkil Faseeh", id: "c5a" },
+            { label: "Fahma Fahim", id: "c5b" },
+            { label: "Abdulbasith Fahim", id: "c5c" },
+        ]},
+        { label: "Ahmad Fazloon\n&\nFathima Ifama", id: "c6", children: [
+            { label: "Farha Fazloon\n&\nMufeez Azam", id: "c6a" },
+            { label: "Insaf Fazloon", id: "c6b" },
+            { label: "Inaam Fazloon", id: "c6c" },
+            { label: "Imam Fazloon", id: "c6d" },
+        ]},
+        { label: "Farshiya Hanim\n&\nRifdhi Jameel", id: "c7", children: [
+            { label: "Abdulrahman Rifdhi", id: "c7a" },
+            { label: "Ayyoob Rifdhi\n&\nFathima Shakira", id: "c7b" },
+            { label: "Usman Rifdhi", id: "c7c" },
+            { label: "Ahmed Rifdhi", id: "c7d" },
+        ]},
+        { label: "Fathima Farhana\n&\nZawahir Thaha", id: "c8", children: [
+            { label: "Thabiya Zawahir", id: "c8a" },
+            { label: "Nuzha Zawahir", id: "c8b" },
+            { label: "Zahra Zawahir", id: "c8c" },
+        ]},
+        { label: "Ahmad Quhaf\n&\nFathima Ashika", id: "c9", children: [
+            { label: "Ajmal Quhaf", id: "c9a" },
+            { label: "Reshma Quhaf", id: "c9b" },
+        ]},
+    ]
+};
+
+// ── Layout engine ───────────────────────────────────────────
+const COUPLE_H = 80, LEAF_H = 52, H_GAP = 32, V_GAP = 120, H_PAD = 36;
+const FONT_COUPLE = 15, FONT_SINGLE = 15;
+
+function isCouple(label) { return label.includes("\n&\n"); }
+
+function nameLines(label) { return label.split("\n").filter(l => l !== "&"); }
+
+function calcWidth(label) {
+    const lines = nameLines(label);
+    const fs = isCouple(label) ? FONT_COUPLE : FONT_SINGLE;
+    const longest = Math.max(...lines.map(l => l.length));
+    return Math.max(longest * fs * 0.58 + H_PAD, 130);
+}
+
+function subtreeWidth(node) {
+    const ownW = calcWidth(node.label) + H_GAP;
+    if (!node.children || !node.children.length) return ownW;
+    const childW = node.children.reduce((s, c) => s + subtreeWidth(c), 0);
+    return Math.max(childW, ownW);
+}
+
+const allNodes = []; // {id, x, y, w, h, label, level}
+const allEdges = []; // {from, to}
+
+function layoutNode(node, xStart, y, level, parentId) {
+    const couple = isCouple(node.label);
+    const w = calcWidth(node.label);
+    let h = couple ? COUPLE_H : LEAF_H;
+    if (level === 0) h += 14;
+    const totalW = subtreeWidth(node);
+    const x = xStart + totalW / 2 - w / 2;
+
+    allNodes.push({ id: node.id, x, y, w, h, label: node.label, level });
+    if (parentId) allEdges.push({ from: parentId, to: node.id });
+
+    if (node.children) {
+        let cx = xStart;
+        for (const ch of node.children) {
+            const cw = subtreeWidth(ch);
+            layoutNode(ch, cx, y + h + V_GAP, level + 1, node.id);
+            cx += cw;
+        }
+    }
+}
+
+layoutNode(treeData, 0, 0, 0, null);
+
+const treeW = Math.max(...allNodes.map(n => n.x + n.w)) + 80;
+const treeH = Math.max(...allNodes.map(n => n.y + n.h)) + 80;
+const PAD = 40; // internal canvas padding
+
+const nodeLookup = {};
+allNodes.forEach(n => nodeLookup[n.id] = n);
+
+// ── Build parent map for highlight ──────────────────────────
+const parentMap = {};
+allEdges.forEach(e => parentMap[e.to] = e.from);
+const childrenMap = {};
+allEdges.forEach(e => {
+    if (!childrenMap[e.from]) childrenMap[e.from] = [];
+    childrenMap[e.from].push(e.to);
+});
+
+function getAncestors(id) {
+    const set = new Set();
+    let cur = id;
+    while (cur) { set.add(cur); cur = parentMap[cur]; }
+    return set;
+}
+
+function getDescendants(id) {
+    const set = new Set([id]);
+    const stack = [id];
+    while (stack.length) {
+        const cur = stack.pop();
+        (childrenMap[cur] || []).forEach(c => { set.add(c); stack.push(c); });
+    }
+    return set;
+}
+
+// ── Render nodes ────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const connSvg = document.getElementById('connectors');
+
+canvas.style.width = (treeW + PAD * 2) + 'px';
+canvas.style.height = (treeH + PAD * 2) + 'px';
+connSvg.setAttribute('width', treeW + PAD * 2);
+connSvg.setAttribute('height', treeH + PAD * 2);
+connSvg.style.width = (treeW + PAD * 2) + 'px';
+connSvg.style.height = (treeH + PAD * 2) + 'px';
+
+// Draw bezier connectors
+const branchColors = { 0: '#6D4C41', 1: '#5D4037', 2: '#6D8B74', 3: '#A5D6A7' };
+const branchWidths = { 0: 3, 1: 2.4, 2: 2, 3: 1.6 };
+
+allEdges.forEach(e => {
+    const s = nodeLookup[e.from], t = nodeLookup[e.to];
+    const sx = s.x + s.w / 2 + PAD, sy = s.y + s.h + PAD;
+    const tx = t.x + t.w / 2 + PAD, ty = t.y + PAD;
+    const cp = V_GAP * 0.55;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${sx},${sy} C${sx},${sy+cp} ${tx},${ty-cp} ${tx},${ty}`);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', branchColors[s.level] || '#A5D6A7');
+    path.setAttribute('stroke-width', branchWidths[s.level] || 1.6);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('opacity', '0');
+    path.dataset.from = e.from;
+    path.dataset.to = e.to;
+    path.dataset.level = s.level;
+    connSvg.appendChild(path);
+});
+
+// Create node elements
+const nodeEls = {};
+allNodes.forEach(n => {
+    const div = document.createElement('div');
+    div.className = `node L${Math.min(n.level, 3)} anim-hidden`;
+    div.style.left = (n.x + PAD) + 'px';
+    div.style.top = (n.y + PAD) + 'px';
+    div.style.width = n.w + 'px';
+    div.style.height = n.h + 'px';
+    div.dataset.id = n.id;
+
+    const lines = nameLines(n.label);
+    lines.forEach(l => {
+        const span = document.createElement('div');
+        span.className = 'name';
+        span.textContent = l;
+        div.appendChild(span);
+    });
+
+    div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleHighlight(n.id);
+    });
+
+    canvas.appendChild(div);
+    nodeEls[n.id] = div;
+});
+
+// ── Highlight + zoom-to-fit logic ────────────────────────────
+let highlightedId = null;
+
+function smoothOn() { canvas.classList.add('smooth'); }
+function smoothOff() { canvas.classList.remove('smooth'); }
+
+function toggleHighlight(id) {
+    if (highlightedId === id) {
+        clearHighlight();
+        return;
+    }
+    // Reset everything first
+    clearHighlight();
+    highlightedId = id;
+
+    const family = new Set([...getAncestors(id), ...getDescendants(id)]);
+
+    // Hide all non-family nodes completely
+    allNodes.forEach(n => {
+        const el = nodeEls[n.id];
+        if (family.has(n.id)) {
+            el.classList.add('highlight');
+            el.style.opacity = '1';
+            el.style.pointerEvents = '';
+        } else {
+            el.classList.remove('highlight');
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+        }
+    });
+
+    // Hide all non-family connectors, emphasize family ones
+    connSvg.querySelectorAll('path').forEach(p => {
+        if (family.has(p.dataset.from) && family.has(p.dataset.to)) {
+            const baseBw = branchWidths[parseInt(p.dataset.level)] || 1.6;
+            p.setAttribute('opacity', '0.8');
+            p.setAttribute('stroke-width', baseBw * 1.3);
+        } else {
+            p.setAttribute('opacity', '0');
+        }
+    });
+
+    // Zoom to fit the highlighted family
+    zoomToNodes([...family]);
+}
+
+function clearHighlight() {
+    highlightedId = null;
+    allNodes.forEach(n => {
+        nodeEls[n.id].classList.remove('highlight');
+        nodeEls[n.id].style.opacity = '1';
+        nodeEls[n.id].style.pointerEvents = '';
+    });
+    allEdges.forEach((e, i) => {
+        const s = nodeLookup[e.from];
+        const path = connSvg.querySelectorAll('path')[i];
+        path.setAttribute('opacity', '0.5');
+        path.setAttribute('stroke-width', branchWidths[s.level] || 1.6);
+    });
+    // Smoothly zoom back to full tree
+    smoothOn();
+    fitToScreen();
+    canvas.addEventListener('transitionend', smoothOff, { once: true });
+}
+
+canvas.addEventListener('click', (e) => {
+    if (e.target === canvas || e.target === connSvg) clearHighlight();
+});
+
+// ── Panzoom ─────────────────────────────────────────────────
+let scale = 1, tx = 0, ty = 0;
+let isDragging = false, dragStartX, dragStartY, dragTxStart, dragTyStart;
+
+function applyTransform() {
+    canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+
+function zoomToNodes(ids) {
+    const familyNodes = ids.map(id => nodeLookup[id]).filter(Boolean);
+    if (!familyNodes.length) return;
+
+    // Bounding box in canvas coordinates (with PAD offset)
+    const margin = 40;
+    const x1 = Math.min(...familyNodes.map(n => n.x + PAD)) - margin;
+    const y1 = Math.min(...familyNodes.map(n => n.y + PAD)) - margin;
+    const x2 = Math.max(...familyNodes.map(n => n.x + n.w + PAD)) + margin;
+    const y2 = Math.max(...familyNodes.map(n => n.y + n.h + PAD)) + margin;
+
+    const bw = x2 - x1, bh = y2 - y1;
+    const vw = window.innerWidth, vh = window.innerHeight;
+
+    const newScale = Math.min(vw / bw, vh / bh) * 0.88;
+    const clampedScale = Math.max(0.15, Math.min(2.5, newScale));
+
+    const newTx = (vw - bw * clampedScale) / 2 - x1 * clampedScale;
+    const newTy = (vh - bh * clampedScale) / 2 - y1 * clampedScale;
+
+    smoothOn();
+    scale = clampedScale;
+    tx = newTx;
+    ty = newTy;
+    applyTransform();
+    canvas.addEventListener('transitionend', smoothOff, { once: true });
+}
+
+function fitToScreen() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const sx = vw / (treeW + PAD * 2);
+    const sy = vh / (treeH + PAD * 2);
+    scale = Math.min(sx, sy) * 0.92;
+    tx = (vw - (treeW + PAD * 2) * scale) / 2;
+    ty = (vh - (treeH + PAD * 2) * scale) / 2 + 20;
+    applyTransform();
+}
+
+function zoomAtCenter(factor) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const cx = vw / 2, cy = vh / 2;
+    zoomAt(cx, cy, factor);
+}
+
+function zoomAt(cx, cy, factor) {
+    const newScale = Math.max(0.1, Math.min(3, scale * factor));
+    tx = cx - (cx - tx) * (newScale / scale);
+    ty = cy - (cy - ty) * (newScale / scale);
+    scale = newScale;
+    applyTransform();
+}
+
+// Mouse drag
+canvas.addEventListener('mousedown', e => {
+    if (e.target.closest('.node')) return;
+    smoothOff();
+    isDragging = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragTxStart = tx; dragTyStart = ty;
+    canvas.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    tx = dragTxStart + (e.clientX - dragStartX);
+    ty = dragTyStart + (e.clientY - dragStartY);
+    applyTransform();
+});
+window.addEventListener('mouseup', () => {
+    isDragging = false;
+    canvas.style.cursor = '';
+});
+
+// Mouse wheel zoom
+window.addEventListener('wheel', e => {
+    e.preventDefault();
+    smoothOff();
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    zoomAt(e.clientX, e.clientY, factor);
+}, { passive: false });
+
+// Touch: pinch zoom + drag
+let touches = [];
+let lastTouchDist = 0, lastTouchCenter = null;
+let touchDragging = false;
+
+canvas.addEventListener('touchstart', e => {
+    touches = [...e.touches];
+    if (touches.length === 1 && !e.target.closest('.node')) {
+        smoothOff();
+        touchDragging = true;
+        dragStartX = touches[0].clientX;
+        dragStartY = touches[0].clientY;
+        dragTxStart = tx; dragTyStart = ty;
+    }
+    if (touches.length === 2) {
+        touchDragging = false;
+        lastTouchDist = Math.hypot(
+            touches[1].clientX - touches[0].clientX,
+            touches[1].clientY - touches[0].clientY
+        );
+        lastTouchCenter = {
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2
+        };
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    touches = [...e.touches];
+    if (touches.length === 1 && touchDragging) {
+        tx = dragTxStart + (touches[0].clientX - dragStartX);
+        ty = dragTyStart + (touches[0].clientY - dragStartY);
+        applyTransform();
+    }
+    if (touches.length === 2) {
+        const dist = Math.hypot(
+            touches[1].clientX - touches[0].clientX,
+            touches[1].clientY - touches[0].clientY
+        );
+        const center = {
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2
+        };
+        if (lastTouchDist > 0) {
+            const factor = dist / lastTouchDist;
+            zoomAt(center.x, center.y, factor);
+        }
+        // Pan while pinching
+        if (lastTouchCenter) {
+            tx += center.x - lastTouchCenter.x;
+            ty += center.y - lastTouchCenter.y;
+            applyTransform();
+        }
+        lastTouchDist = dist;
+        lastTouchCenter = center;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+    touchDragging = false;
+    lastTouchDist = 0;
+    lastTouchCenter = null;
+});
+
+// Buttons
+document.getElementById('zoomIn').addEventListener('click', () => zoomAtCenter(1.3));
+document.getElementById('zoomOut').addEventListener('click', () => zoomAtCenter(0.7));
+document.getElementById('fitBtn').addEventListener('click', () => {
+    clearHighlight();
+});
+
+// ── Intro animation sequence ────────────────────────────────
+fitToScreen();
+
+const maxLevel = Math.max(...allNodes.map(n => n.level));
+const SPLASH_DURATION = 2200;   // splash screen visible time
+const LEVEL_DELAY = 350;        // delay between each level animating in
+const NODE_STAGGER = 60;        // stagger between siblings at same level
+
+function animateIn() {
+    const splash = document.getElementById('splash');
+    splash.classList.add('fade-out');
+
+    // Show header and controls
+    setTimeout(() => {
+        document.getElementById('header').style.opacity = '1';
+        document.getElementById('controls').style.opacity = '1';
+        splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+    }, 200);
+
+    // Animate nodes level by level
+    for (let lvl = 0; lvl <= maxLevel; lvl++) {
+        const nodesAtLevel = allNodes.filter(n => n.level === lvl);
+        nodesAtLevel.forEach((n, idx) => {
+            const delay = lvl * LEVEL_DELAY + idx * NODE_STAGGER;
+            setTimeout(() => {
+                const el = nodeEls[n.id];
+                el.classList.remove('anim-hidden');
+                el.classList.add('anim-grow');
+            }, delay);
         });
-        container.addEventListener('mouseleave', () => isDown = false);
-        container.addEventListener('mouseup', () => isDown = false);
-        container.addEventListener('mousemove', e => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - container.offsetLeft;
-            container.scrollLeft = scrollLeft - (x - startX);
+
+        // Animate connectors FROM this level (appear after level's nodes)
+        const edgesFromLevel = document.querySelectorAll(`#connectors path[data-level="${lvl}"]`);
+        edgesFromLevel.forEach((path, idx) => {
+            const delay = lvl * LEVEL_DELAY + 200 + idx * 40;
+            setTimeout(() => {
+                // Set up stroke dash for draw-in effect
+                const len = path.getTotalLength();
+                path.style.strokeDasharray = len;
+                path.style.strokeDashoffset = len;
+                path.setAttribute('opacity', '0.5');
+                path.classList.add('anim-draw');
+            }, delay);
         });
-    </script>
+    }
+
+    // Show hint after tree is fully revealed
+    const totalAnimTime = (maxLevel + 1) * LEVEL_DELAY + 500;
+    setTimeout(() => {
+        const hint = document.getElementById('hint');
+        hint.style.opacity = '1';
+        hint.style.transition = 'opacity 0.6s';
+        setTimeout(() => hint.classList.add('hidden'), 3500);
+    }, totalAnimTime);
+}
+
+// Start animation after splash has played
+setTimeout(animateIn, SPLASH_DURATION);
+
+// Handle resize
+window.addEventListener('resize', fitToScreen);
+</script>
 </body>
 </html>
