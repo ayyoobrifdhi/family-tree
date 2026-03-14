@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jameel Marikkar Family Tree</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(180deg, #FAF6F0 0%, #F0E8DA 100%);
+            min-height: 100vh;
+            font-family: 'Lato', sans-serif;
+            color: #3E2723;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+        }
+
+        header h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            font-weight: 700;
+            color: #3E2723;
+            letter-spacing: 1px;
+        }
+
+        .ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .ornament .line {
+            width: 60px;
+            height: 1px;
+            background: #C9A96E;
+        }
+
+        .ornament .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #C9A96E;
+        }
+
+        .ornament .dot.center {
+            width: 6px;
+            height: 6px;
+        }
+
+        .hint {
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            color: #8D6E63;
+            opacity: 0.8;
+        }
+
+        .tree-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 0.5rem 1rem 2rem;
+            cursor: grab;
+        }
+
+        .tree-container:active {
+            cursor: grabbing;
+        }
+
+        .tree-container svg {
+            display: block;
+            min-width: 100%;
+            height: auto;
+            min-height: 300px;
+        }
+
+        /* Mobile: make it scrollable and show hint */
+        @media (max-width: 768px) {
+            .tree-container svg {
+                width: 2400px;
+                height: auto;
+            }
+            .hint { display: block; }
+        }
+
+        @media (min-width: 769px) {
+            .tree-container svg {
+                width: 100%;
+                height: auto;
+            }
+            .hint { display: none; }
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.75rem;
+            color: #BCAAA4;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Jameel Marikkar Family Tree</h1>
+        <div class="ornament">
+            <div class="line"></div>
+            <div class="dot"></div>
+            <div class="dot center"></div>
+            <div class="dot"></div>
+            <div class="line"></div>
+        </div>
+    </header>
+
+    <p class="hint">Swipe left/right to explore the tree</p>
+
+    <div class="tree-container" id="treeContainer">
+        <object data="Marikkar_Family_Tree.svg" type="image/svg+xml" width="100%" aria-label="Jameel Marikkar Family Tree"></object>
+    </div>
+
+    <footer>Jameel Marikkar Family</footer>
+
+    <script>
+        // Drag to scroll on desktop
+        const container = document.getElementById('treeContainer');
+        let isDown = false, startX, scrollLeft;
+
+        container.addEventListener('mousedown', e => {
+            isDown = true;
+            startX = e.pageX - container.offsetLeft;
+            scrollLeft = container.scrollLeft;
+        });
+        container.addEventListener('mouseleave', () => isDown = false);
+        container.addEventListener('mouseup', () => isDown = false);
+        container.addEventListener('mousemove', e => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            container.scrollLeft = scrollLeft - (x - startX);
+        });
+    </script>
+</body>
+</html>
