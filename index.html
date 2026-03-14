@@ -191,12 +191,11 @@
             text-align: center;
             padding: 10px 16px;
             cursor: pointer;
-            transition: box-shadow 0.25s, transform 0.25s;
+            transition: left 0.6s cubic-bezier(0.25,0.46,0.45,0.94),
+                        top 0.6s cubic-bezier(0.25,0.46,0.45,0.94),
+                        opacity 0.4s ease,
+                        box-shadow 0.25s, transform 0.25s;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        .node {
-            transition: box-shadow 0.25s, transform 0.25s, opacity 0.4s;
         }
 
         .node:hover {
@@ -544,27 +543,162 @@ allNodes.forEach(n => {
     nodeEls[n.id] = div;
 });
 
-// ── Highlight + zoom-to-fit logic ────────────────────────────
+// ── Highlight + rearrange logic ──────────────────────────────
 let highlightedId = null;
+let connectorTimer = null;
 
 function smoothOn() { canvas.classList.add('smooth'); }
 function smoothOff() { canvas.classList.remove('smooth'); }
+
+// Store original positions
+const origPos = {};
+allNodes.forEach(n => { origPos[n.id] = { x: n.x + PAD, y: n.y + PAD }; });
+
+// Store edge path elements keyed by "from-to"
+const edgePaths = {};
+connSvg.querySelectorAll('path').forEach(p => {
+    edgePaths[`${p.dataset.from}-${p.dataset.to}`] = p;
+});
+
+function computeEdgeD(fromId, toId, positions) {
+    const s = nodeLookup[fromId], t = nodeLookup[toId];
+    const sp = positions[fromId], tp = positions[toId];
+    const sx = sp.x + s.w / 2, sy = sp.y + s.h;
+    const ex = tp.x + t.w / 2, ey = tp.y;
+    const cp = V_GAP * 0.55;
+    return `M${sx},${sy} C${sx},${sy+cp} ${ex},${ey-cp} ${ex},${ey}`;
+}
+
+function redrawConnectors(positions, familySet) {
+    allEdges.forEach(e => {
+        const path = edgePaths[`${e.from}-${e.to}`];
+        if (!path) return;
+        if (familySet && (!familySet.has(e.from) || !familySet.has(e.to))) {
+            path.setAttribute('opacity', '0');
+            return;
+        }
+        path.setAttribute('d', computeEdgeD(e.from, e.to, positions));
+        const baseBw = branchWidths[nodeLookup[e.from].level] || 1.6;
+        if (familySet) {
+            path.setAttribute('opacity', '0.8');
+            path.setAttribute('stroke-width', baseBw * 1.3);
+        } else {
+            path.setAttribute('opacity', '0.5');
+            path.setAttribute('stroke-width', baseBw);
+        }
+    });
+}
+
+// Build a mini tree for any node: ancestors chain + descendants subtree
+function buildFamilySubtree(id) {
+    // Walk ancestors to root
+    const ancestorChain = [];
+    let cur = id;
+    while (cur) { ancestorChain.unshift(cur); cur = parentMap[cur]; }
+
+    // Recursive function: given a node id, build its subtree data
+    function buildSubtreeData(nid) {
+        const n = nodeLookup[nid];
+        const result = { id: nid, label: n.label, w: n.w, h: n.h, level: n.level };
+        const kids = (childrenMap[nid] || []);
+        if (kids.length) result.children = kids.map(buildSubtreeData);
+        return result;
+    }
+
+    // Build from clicked node down (full descendants)
+    const clickedSubtree = buildSubtreeData(id);
+
+    // Now wrap in ancestor chain: each ancestor has only the relevant child
+    let subtree = clickedSubtree;
+    for (let i = ancestorChain.length - 2; i >= 0; i--) {
+        const aid = ancestorChain[i];
+        const an = nodeLookup[aid];
+        subtree = { id: aid, label: an.label, w: an.w, h: an.h, level: an.level, children: [subtree] };
+    }
+    return subtree;
+}
+
+// Layout a subtree and return positions map centered on canvas
+function layoutSubtree(subtree) {
+    const positions = {};
+    const subEdges = [];
+
+    function stWidth(node) {
+        const ownW = node.w + H_GAP;
+        if (!node.children || !node.children.length) return ownW;
+        const childW = node.children.reduce((s, c) => s + stWidth(c), 0);
+        return Math.max(childW, ownW);
+    }
+
+    function stLayout(node, xStart, y, parentId) {
+        const totalW = stWidth(node);
+        const x = xStart + totalW / 2 - node.w / 2;
+        positions[node.id] = { x, y, w: node.w, h: node.h };
+        if (parentId) subEdges.push({ from: parentId, to: node.id });
+        if (node.children) {
+            let cx = xStart;
+            for (const ch of node.children) {
+                stLayout(ch, cx, y + node.h + V_GAP, node.id);
+                cx += stWidth(ch);
+            }
+        }
+    }
+
+    stLayout(subtree, 0, 0, null);
+
+    // Center the result on the canvas
+    const xs = Object.values(positions);
+    const minX = Math.min(...xs.map(p => p.x));
+    const maxX = Math.max(...xs.map(p => p.x + p.w));
+    const minY = Math.min(...xs.map(p => p.y));
+    const maxY = Math.max(...xs.map(p => p.y + p.h));
+    const canvasCx = (treeW + PAD * 2) / 2;
+    const canvasCy = (treeH + PAD * 2) / 2;
+    const offX = canvasCx - (minX + maxX) / 2;
+    const offY = canvasCy - (minY + maxY) / 2;
+
+    const centered = {};
+    for (const [nid, p] of Object.entries(positions)) {
+        centered[nid] = { x: p.x + offX, y: p.y + offY };
+    }
+    return { positions: centered, edges: subEdges, w: maxX - minX, h: maxY - minY };
+}
 
 function toggleHighlight(id) {
     if (highlightedId === id) {
         clearHighlight();
         return;
     }
-    // Reset everything first
-    clearHighlight();
-    highlightedId = id;
+    if (connectorTimer) { clearTimeout(connectorTimer); connectorTimer = null; }
 
+    // If switching highlight, instantly restore positions first
+    if (highlightedId) {
+        allNodes.forEach(n => {
+            const el = nodeEls[n.id];
+            el.style.transition = 'none';
+            el.style.left = origPos[n.id].x + 'px';
+            el.style.top = origPos[n.id].y + 'px';
+        });
+        canvas.offsetHeight; // force reflow
+        allNodes.forEach(n => { nodeEls[n.id].style.transition = ''; });
+    }
+
+    highlightedId = id;
     const family = new Set([...getAncestors(id), ...getDescendants(id)]);
 
-    // Hide all non-family nodes completely
+    // Build and layout a fresh subtree centered on canvas
+    const subtree = buildFamilySubtree(id);
+    const { positions: newPos, edges: subEdges, w: famW, h: famH } = layoutSubtree(subtree);
+
+    // Hide all connectors during move
+    connSvg.querySelectorAll('path').forEach(p => p.setAttribute('opacity', '0'));
+
+    // Move family nodes to new centered positions, hide all others
     allNodes.forEach(n => {
         const el = nodeEls[n.id];
-        if (family.has(n.id)) {
+        if (newPos[n.id]) {
+            el.style.left = newPos[n.id].x + 'px';
+            el.style.top = newPos[n.id].y + 'px';
             el.classList.add('highlight');
             el.style.opacity = '1';
             el.style.pointerEvents = '';
@@ -575,35 +709,61 @@ function toggleHighlight(id) {
         }
     });
 
-    // Hide all non-family connectors, emphasize family ones
-    connSvg.querySelectorAll('path').forEach(p => {
-        if (family.has(p.dataset.from) && family.has(p.dataset.to)) {
-            const baseBw = branchWidths[parseInt(p.dataset.level)] || 1.6;
-            p.setAttribute('opacity', '0.8');
-            p.setAttribute('stroke-width', baseBw * 1.3);
-        } else {
-            p.setAttribute('opacity', '0');
-        }
-    });
+    // After nodes finish moving, draw family connectors at new positions
+    connectorTimer = setTimeout(() => {
+        // Redraw only the family edges
+        allEdges.forEach(e => {
+            const path = edgePaths[`${e.from}-${e.to}`];
+            if (!path) return;
+            if (newPos[e.from] && newPos[e.to]) {
+                path.setAttribute('d', computeEdgeD(e.from, e.to, newPos));
+                const baseBw = branchWidths[nodeLookup[e.from].level] || 1.6;
+                path.setAttribute('opacity', '0.8');
+                path.setAttribute('stroke-width', baseBw * 1.3);
+            } else {
+                path.setAttribute('opacity', '0');
+            }
+        });
+    }, 650);
 
-    // Zoom to fit the highlighted family
-    zoomToNodes([...family]);
+    // Zoom viewport to fit
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const newScale = Math.min(vw / (famW + 120), vh / (famH + 120)) * 0.85;
+    const clampedScale = Math.max(0.2, Math.min(2.5, newScale));
+    const newTx = (vw - (treeW + PAD * 2) * clampedScale) / 2;
+    const newTy = (vh - (treeH + PAD * 2) * clampedScale) / 2;
+
+    smoothOn();
+    scale = clampedScale;
+    tx = newTx;
+    ty = newTy;
+    applyTransform();
+    canvas.addEventListener('transitionend', smoothOff, { once: true });
 }
 
 function clearHighlight() {
+    if (connectorTimer) { clearTimeout(connectorTimer); connectorTimer = null; }
     highlightedId = null;
+
+    // Hide connectors during move
+    connSvg.querySelectorAll('path').forEach(p => p.setAttribute('opacity', '0'));
+
+    // Restore all nodes to original positions
     allNodes.forEach(n => {
-        nodeEls[n.id].classList.remove('highlight');
-        nodeEls[n.id].style.opacity = '1';
-        nodeEls[n.id].style.pointerEvents = '';
+        const el = nodeEls[n.id];
+        el.style.left = origPos[n.id].x + 'px';
+        el.style.top = origPos[n.id].y + 'px';
+        el.classList.remove('highlight');
+        el.style.opacity = '1';
+        el.style.pointerEvents = '';
     });
-    allEdges.forEach((e, i) => {
-        const s = nodeLookup[e.from];
-        const path = connSvg.querySelectorAll('path')[i];
-        path.setAttribute('opacity', '0.5');
-        path.setAttribute('stroke-width', branchWidths[s.level] || 1.6);
-    });
-    // Smoothly zoom back to full tree
+
+    // After nodes settle, redraw all connectors at original positions
+    connectorTimer = setTimeout(() => {
+        redrawConnectors(origPos, null);
+    }, 650);
+
+    // Zoom back to full tree
     smoothOn();
     fitToScreen();
     canvas.addEventListener('transitionend', smoothOff, { once: true });
@@ -619,34 +779,6 @@ let isDragging = false, dragStartX, dragStartY, dragTxStart, dragTyStart;
 
 function applyTransform() {
     canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-}
-
-function zoomToNodes(ids) {
-    const familyNodes = ids.map(id => nodeLookup[id]).filter(Boolean);
-    if (!familyNodes.length) return;
-
-    // Bounding box in canvas coordinates (with PAD offset)
-    const margin = 40;
-    const x1 = Math.min(...familyNodes.map(n => n.x + PAD)) - margin;
-    const y1 = Math.min(...familyNodes.map(n => n.y + PAD)) - margin;
-    const x2 = Math.max(...familyNodes.map(n => n.x + n.w + PAD)) + margin;
-    const y2 = Math.max(...familyNodes.map(n => n.y + n.h + PAD)) + margin;
-
-    const bw = x2 - x1, bh = y2 - y1;
-    const vw = window.innerWidth, vh = window.innerHeight;
-
-    const newScale = Math.min(vw / bw, vh / bh) * 0.88;
-    const clampedScale = Math.max(0.15, Math.min(2.5, newScale));
-
-    const newTx = (vw - bw * clampedScale) / 2 - x1 * clampedScale;
-    const newTy = (vh - bh * clampedScale) / 2 - y1 * clampedScale;
-
-    smoothOn();
-    scale = clampedScale;
-    tx = newTx;
-    ty = newTy;
-    applyTransform();
-    canvas.addEventListener('transitionend', smoothOff, { once: true });
 }
 
 function fitToScreen() {
@@ -801,6 +933,9 @@ function animateIn() {
                 const el = nodeEls[n.id];
                 el.classList.remove('anim-hidden');
                 el.classList.add('anim-grow');
+                el.addEventListener('animationend', () => {
+                    el.classList.remove('anim-grow');
+                }, { once: true });
             }, delay);
         });
 
@@ -809,18 +944,26 @@ function animateIn() {
         edgesFromLevel.forEach((path, idx) => {
             const delay = lvl * LEVEL_DELAY + 200 + idx * 40;
             setTimeout(() => {
-                // Set up stroke dash for draw-in effect
                 const len = path.getTotalLength();
                 path.style.strokeDasharray = len;
                 path.style.strokeDashoffset = len;
                 path.setAttribute('opacity', '0.5');
                 path.classList.add('anim-draw');
+                path.addEventListener('animationend', () => {
+                    path.classList.remove('anim-draw');
+                    path.style.strokeDasharray = '';
+                    path.style.strokeDashoffset = '';
+                }, { once: true });
             }, delay);
         });
     }
 
     // Show hint after tree is fully revealed
-    const totalAnimTime = (maxLevel + 1) * LEVEL_DELAY + 500;
+    // Account for max stagger: last level's last node
+    const maxStagger = Math.max(...Array.from({length: maxLevel+1}, (_, lvl) =>
+        lvl * LEVEL_DELAY + allNodes.filter(n => n.level === lvl).length * NODE_STAGGER
+    ));
+    const totalAnimTime = maxStagger + 800;
     setTimeout(() => {
         const hint = document.getElementById('hint');
         hint.style.opacity = '1';
